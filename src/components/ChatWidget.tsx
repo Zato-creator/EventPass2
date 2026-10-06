@@ -29,7 +29,7 @@ export function ChatWidget() {
         defaultLanguage: "en",
         metadata: { visitor_id: getVisitorId(), usuario_id: usuarioId },
         initialMessages: [
-          "¡Hola! 👋 Soy EventPass Assistant.",
+          "¡Hola! Soy EventPass Assistant.",
           "Pregúntame por eventos, fechas, lugares, cupos, lista de espera o cómo vincular Telegram.",
         ],
         i18n: {

@@ -1,29 +1,73 @@
 @import "tailwindcss";
 
-/* Identidad visual EventPass Colegios — DEV-B puede ajustar la paleta */
+/* Identidad visual EventPass Colegios */
 @theme {
-  --color-marca: #1e3a8a;        /* azul institucional */
-  --color-marca-claro: #dbeafe;
-  --color-acento: #f59e0b;       /* amarillo escolar */
-  --color-fondo: #f8fafc;
-  --color-texto: #0f172a;
+  /* Tipografía (variables definidas por next/font en layout.tsx) */
+  --font-sans: var(--font-figtree), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-bricolage), var(--font-figtree), system-ui, sans-serif;
+
+  /* Base */
+  --color-ink: #101b3b;
+  --color-muted: #4a5470;
+  --color-navy: #1c3a8a;
+  --color-navy-deep: #13285f;
+  --color-marigold: #f4b23e;
+  --color-marigold-soft: #fff4dc;
+  --color-ground: #f5f6fa;
+  --color-surface: #ffffff;
+  --color-line: #e2e5ee;
+  --color-input-border: #c5cbda;
+
+  /* Categorías (color / fondo suave) */
+  --color-cat-academico: #2f5bd3;
+  --color-cat-academico-tint: #e6edfc;
+  --color-cat-deportes: #1f7a52;
+  --color-cat-deportes-tint: #e3f4ec;
+  --color-cat-cultura: #b9400e;
+  --color-cat-cultura-tint: #fdebdd;
+  --color-cat-tecnologia: #6d3fd1;
+  --color-cat-tecnologia-tint: #eee8fb;
+  --color-cat-comunidad: #0e7490;
+  --color-cat-comunidad-tint: #e0f2f6;
+
+  /* Estados (fondo / texto) */
+  --color-ok-bg: #dcfce7;
+  --color-ok-fg: #14532d;
+  --color-pocos-bg: #ffedd5;
+  --color-pocos-fg: #7c2d12;
+  --color-espera-bg: #fef3c7;
+  --color-espera-fg: #78350f;
+  --color-cerrado-bg: #e2e8f0;
+  --color-cerrado-fg: #334155;
+  --color-cancelado-bg: #fee2e2;
+  --color-cancelado-fg: #7f1d1d;
+
+  /* Radios */
+  --radius-control: 10px;
+  --radius-card: 16px;
 }
 
 body {
-  background: var(--color-fondo);
-  color: var(--color-texto);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--color-ground);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+/* Foco visible y consistente */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-navy);
+  outline-offset: 2px;
 }
 
 /* Widget del asistente (@n8n/chat) con la paleta institucional */
 :root {
-  --chat--color-primary: #1e3a8a;
-  --chat--color-primary-shade-50: #1b347c;
-  --chat--color-primary-shade-100: #172c6b;
-  --chat--color-secondary: #f59e0b;
-  --chat--color-secondary-shade-50: #d98b09;
-  --chat--toggle--background: #1e3a8a;
-  --chat--toggle--hover--background: #172c6b;
-  --chat--header--background: #1e3a8a;
-  --chat--message--user--background: #1e3a8a;
+  --chat--color-primary: #1c3a8a;
+  --chat--color-primary-shade-50: #19347c;
+  --chat--color-primary-shade-100: #13285f;
+  --chat--color-secondary: #f4b23e;
+  --chat--color-secondary-shade-50: #e0a030;
+  --chat--toggle--background: #1c3a8a;
+  --chat--toggle--hover--background: #13285f;
+  --chat--header--background: #13285f;
+  --chat--message--user--background: #1c3a8a;
 }

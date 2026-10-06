@@ -8,11 +8,21 @@ import { actualizarPerfil, desactivarCuenta, obtenerPerfil } from "@/lib/api/usu
 import { useAuth } from "@/context/AuthContext";
 import { fechaHora } from "@/lib/fechas";
 import { RequiereSesion } from "@/components/RequiereSesion";
-import { Loading } from "@/components/ui/Loading";
 import { Alert } from "@/components/ui/Alert";
+import { Campo } from "@/components/ui/Campo";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { Icon } from "@/components/ui/Icon";
+import { Spinner } from "@/components/ui/Loading";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type Mensaje = { tipo: "exito" | "error"; texto: string } | null;
-const input = "mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-normal";
+const tarjeta = "rounded-[16px] border border-line bg-surface p-6";
+const boton = "inline-flex min-h-12 items-center justify-center gap-2 rounded-[10px] px-5 text-base font-bold disabled:opacity-60";
+
+function iniciales(nombre: string) {
+  const p = nombre.trim().split(/\s+/);
+  return ((p[0]?.[0] ?? "") + (p[1]?.[0] ?? "")).toUpperCase() || "?";
+}
 
 function Contenido() {
   const { cerrarSesion } = useAuth();
@@ -30,6 +40,7 @@ function Contenido() {
   const [passDesactivar, setPassDesactivar] = useState("");
   const [desactivando, setDesactivando] = useState(false);
   const [msgDesactivar, setMsgDesactivar] = useState<Mensaje>(null);
+  const [confirmar, setConfirmar] = useState(false);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -45,6 +56,8 @@ function Contenido() {
   useEffect(() => {
     cargar();
   }, [cargar]);
+
+  const cerrarModal = useCallback(() => setConfirmar(false), []);
 
   async function guardar(e: FormEvent) {
     e.preventDefault();
@@ -71,93 +84,162 @@ function Contenido() {
     } else setMsgEditar({ tipo: "error", texto: res.error.message });
   }
 
-  async function desactivar(e: FormEvent) {
+  function pedirDesactivar(e: FormEvent) {
     e.preventDefault();
-    if (!window.confirm("¿Seguro que quieres desactivar tu cuenta? Se cerrarán todas tus sesiones.")) return;
+    setConfirmar(true);
+  }
+
+  async function desactivar() {
     setDesactivando(true);
     setMsgDesactivar(null);
     const res = await desactivarCuenta(passDesactivar);
     setDesactivando(false);
+    setConfirmar(false);
     if (res.ok) {
       await cerrarSesion();
       router.push("/");
     } else setMsgDesactivar({ tipo: "error", texto: res.error.message });
   }
 
-  if (cargando) return <Loading texto="Cargando tu perfil…" />;
+  if (cargando)
+    return (
+      <div role="status" className="space-y-4">
+        <span className="sr-only">Cargando tu perfil…</span>
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
   if (error || !perfil)
     return (
-      <Alert tipo="error">
-        {error ?? "No se pudo cargar el perfil."}{" "}
-        <button onClick={cargar} className="font-semibold underline">Reintentar</button>
+      <Alert
+        tipo="error"
+        titulo="No pudimos cargar tu perfil"
+        accion={
+          <button
+            type="button"
+            onClick={cargar}
+            className="min-h-11 rounded-[10px] border border-cancelado-fg px-4 text-sm font-bold text-cancelado-fg hover:bg-white/60"
+          >
+            Reintentar
+          </button>
+        }
+      >
+        {error ?? "No se pudo cargar el perfil."}
       </Alert>
     );
 
   return (
     <div className="space-y-6">
-      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="mb-3 text-lg font-bold">Mis datos</h2>
-        <dl className="grid gap-2 text-sm sm:grid-cols-2">
-          <div><dt className="font-medium text-slate-500">Nombre</dt><dd>{perfil.nombre}</dd></div>
-          <div><dt className="font-medium text-slate-500">Correo</dt><dd>{perfil.email}</dd></div>
-          <div><dt className="font-medium text-slate-500">Estado</dt><dd>{perfil.estado}</dd></div>
-          <div><dt className="font-medium text-slate-500">Registrado</dt><dd>{fechaHora(perfil.fecha_registro)}</dd></div>
-          <div className="sm:col-span-2">
-            <dt className="font-medium text-slate-500">Telegram</dt>
-            <dd>
+      <section className={`${tarjeta} flex flex-wrap items-center gap-5`}>
+        <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-navy font-display text-2xl font-bold text-white">
+          {iniciales(perfil.nombre)}
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-display text-2xl font-bold text-ink">{perfil.nombre}</h2>
+          <p className="truncate text-[15px] text-muted">{perfil.email}</p>
+        </div>
+        <dl className="grid w-full gap-4 border-t border-line pt-4 text-[15px] sm:grid-cols-3">
+          <div>
+            <dt className="text-xs font-bold uppercase tracking-wider text-muted">Estado</dt>
+            <dd className="mt-1">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-ok-bg px-2.5 py-1 text-xs font-bold text-ok-fg">
+                {perfil.estado === "ACTIVO" ? "Activa" : "Inactiva"}
+              </span>
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs font-bold uppercase tracking-wider text-muted">Registrado</dt>
+            <dd className="mt-1 font-semibold text-ink">{fechaHora(perfil.fecha_registro)}</dd>
+          </div>
+          <div>
+            <dt className="text-xs font-bold uppercase tracking-wider text-muted">Telegram</dt>
+            <dd className="mt-1">
               {perfil.telegram_vinculado ? (
-                <>✅ Vinculado{perfil.telegram_username ? ` como @${perfil.telegram_username}` : ""}</>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-ok-bg px-2.5 py-1 text-xs font-bold text-ok-fg">
+                  <Icon name="check" size={14} /> Vinculado{perfil.telegram_username ? ` · @${perfil.telegram_username}` : ""}
+                </span>
               ) : (
-                <>
-                  ⚠️ No vinculado — es necesario para inscribirte.{" "}
-                  <Link href="/telegram" className="font-semibold text-marca underline">Vincular ahora</Link>
-                </>
+                <Link
+                  href="/telegram"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-espera-bg px-2.5 py-1 text-xs font-bold text-espera-fg hover:underline"
+                >
+                  <Icon name="send" size={14} /> No vinculado · Vincular ahora
+                </Link>
               )}
             </dd>
           </div>
         </dl>
       </section>
 
-      <form onSubmit={guardar} className="space-y-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-bold">Editar perfil</h2>
+      <form onSubmit={guardar} className={`${tarjeta} space-y-4`}>
+        <h2 className="font-display text-xl font-bold text-ink">Editar perfil</h2>
         {msgEditar && <Alert tipo={msgEditar.tipo}>{msgEditar.texto}</Alert>}
-        <label className="block text-sm font-medium">
-          Nombre
-          <input required minLength={3} maxLength={80} value={nombre} onChange={(e) => setNombre(e.target.value)} className={input} />
-        </label>
-        <p className="text-sm text-slate-500">Para cambiar la contraseña completa los dos campos (el correo no se puede cambiar).</p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-sm font-medium">
-            Contraseña actual
-            <input type="password" autoComplete="current-password" required={!!passNueva} value={passActual}
-              onChange={(e) => setPassActual(e.target.value)} className={input} />
-          </label>
-          <label className="block text-sm font-medium">
-            Nueva contraseña
-            <input type="password" autoComplete="new-password" minLength={8} value={passNueva}
-              onChange={(e) => setPassNueva(e.target.value)} placeholder="Mín. 8, letras y números" className={input} />
-          </label>
+        <Campo
+          etiqueta="Nombre"
+          required
+          minLength={3}
+          maxLength={80}
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          ayuda="El correo no se puede cambiar."
+        />
+        <p className="text-sm text-muted">Para cambiar la contraseña completa los dos campos.</p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Campo
+            etiqueta="Contraseña actual"
+            type="password"
+            autoComplete="current-password"
+            required={!!passNueva}
+            value={passActual}
+            onChange={(e) => setPassActual(e.target.value)}
+          />
+          <Campo
+            etiqueta="Nueva contraseña"
+            type="password"
+            autoComplete="new-password"
+            minLength={8}
+            value={passNueva}
+            onChange={(e) => setPassNueva(e.target.value)}
+            ayuda="Mínimo 8, letras y números."
+          />
         </div>
-        <button disabled={guardando} className="rounded-lg bg-marca px-5 py-2 font-semibold text-white disabled:opacity-60">
+        <button disabled={guardando} className={`${boton} bg-navy text-white hover:bg-navy-deep`}>
+          {guardando && <Spinner className="h-5 w-5" />}
           {guardando ? "Guardando…" : "Guardar cambios"}
         </button>
       </form>
 
-      <form onSubmit={desactivar} className="space-y-3 rounded-xl border border-red-200 bg-red-50/40 p-5">
-        <h2 className="text-lg font-bold text-red-800">Desactivar cuenta</h2>
-        <p className="text-sm text-slate-700">
+      <form onSubmit={pedirDesactivar} className="space-y-4 rounded-[16px] border border-[#FCA5A5] bg-surface p-6">
+        <h2 className="font-display text-xl font-bold text-cancelado-fg">Desactivar cuenta</h2>
+        <p className="text-[15px] text-muted">
           Tu cuenta quedará INACTIVA y se cerrarán tus sesiones. Tus datos no se eliminan.
         </p>
         {msgDesactivar && <Alert tipo={msgDesactivar.tipo}>{msgDesactivar.texto}</Alert>}
-        <label className="block text-sm font-medium">
-          Confirma con tu contraseña
-          <input type="password" required autoComplete="current-password" value={passDesactivar}
-            onChange={(e) => setPassDesactivar(e.target.value)} className={input} />
-        </label>
-        <button disabled={desactivando} className="rounded-lg bg-red-700 px-5 py-2 font-semibold text-white disabled:opacity-60">
-          {desactivando ? "Desactivando…" : "Desactivar mi cuenta"}
+        <Campo
+          etiqueta="Confirma con tu contraseña"
+          type="password"
+          required
+          autoComplete="current-password"
+          value={passDesactivar}
+          onChange={(e) => setPassDesactivar(e.target.value)}
+        />
+        <button disabled={desactivando} className={`${boton} border border-[#DC2626] text-[#B91C1C] hover:bg-cancelado-bg`}>
+          Desactivar mi cuenta
         </button>
       </form>
+
+      <ConfirmDialog
+        abierto={confirmar}
+        titulo="¿Desactivar tu cuenta?"
+        textoConfirmar={desactivando ? "Desactivando…" : "Sí, desactivar"}
+        textoCancelar="No, volver"
+        peligro
+        ocupado={desactivando}
+        onConfirmar={desactivar}
+        onCerrar={cerrarModal}
+      >
+        Se cerrarán todas tus sesiones y no podrás inscribirte a eventos. Tus datos se conservan.
+      </ConfirmDialog>
     </div>
   );
 }
@@ -166,7 +248,7 @@ export default function PerfilPage() {
   return (
     <RequiereSesion>
       <div className="mx-auto max-w-3xl space-y-6">
-        <h1 className="text-2xl font-bold">Mi perfil</h1>
+        <h1 className="font-display text-4xl font-extrabold tracking-tight text-ink">Mi perfil</h1>
         <Contenido />
       </div>
     </RequiereSesion>

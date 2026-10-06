@@ -4,6 +4,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { Alert } from "@/components/ui/Alert";
+import { AuthCard } from "@/components/AuthCard";
+import { Campo, botonPrimario } from "@/components/ui/Campo";
+import { Spinner } from "@/components/ui/Loading";
+
+type Errores = { email?: string; password?: string };
 
 export default function LoginPage() {
   const { iniciarSesion } = useAuth();
@@ -12,31 +17,65 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errores, setErrores] = useState<Errores>({});
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    const faltan: Errores = {};
+    if (!email.trim()) faltan.email = "Escribe tu correo.";
+    else if (!/^\S+@\S+\.\S+$/.test(email.trim())) faltan.email = "Revisa el formato del correo.";
+    if (!password) faltan.password = "Escribe tu contraseña.";
+    setErrores(faltan);
+    if (faltan.email || faltan.password) return;
+
     setEnviando(true);
     setError(null);
     const res = await iniciarSesion(email, password);
     setEnviando(false);
     if (res.ok) router.push("/eventos");
-    else setError(res.error.message);
+    else {
+      setError(res.error.message);
+      if (res.error.code === "CREDENCIALES_INVALIDAS") setErrores({ password: "Correo o contraseña incorrectos." });
+    }
   }
 
   return (
-    <form onSubmit={onSubmit} className="mx-auto max-w-sm space-y-4 rounded-xl bg-white p-6 shadow">
-      <h1 className="text-2xl font-bold">Iniciar sesión</h1>
-      {error && <Alert tipo="error">{error}</Alert>}
-      <input type="email" required placeholder="Correo" value={email} onChange={(e) => setEmail(e.target.value)}
-        className="w-full rounded-lg border border-slate-300 px-3 py-2" />
-      <input type="password" required placeholder="Contraseña" value={password} onChange={(e) => setPassword(e.target.value)}
-        className="w-full rounded-lg border border-slate-300 px-3 py-2" />
-      <button disabled={enviando} className="w-full rounded-lg bg-marca py-2 font-semibold text-white disabled:opacity-60">
-        {enviando ? "Ingresando…" : "Ingresar"}
-      </button>
-      <p className="text-center text-sm">
-        ¿No tienes cuenta? <Link href="/registro" className="text-marca underline">Regístrate</Link>
-      </p>
-    </form>
+    <AuthCard
+      titulo="Iniciar sesión"
+      subtitulo="Entra para inscribirte y ver tus eventos."
+      pie={
+        <>
+          ¿No tienes cuenta?{" "}
+          <Link href="/registro" className="font-bold text-navy underline">
+            Crear cuenta
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={onSubmit} noValidate className="space-y-4">
+        {error && <Alert tipo="error">{error}</Alert>}
+        <Campo
+          etiqueta="Correo"
+          type="email"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="tucorreo@ejemplo.com"
+          error={errores.email}
+        />
+        <Campo
+          etiqueta="Contraseña"
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          error={errores.password}
+        />
+        <button disabled={enviando} className={botonPrimario}>
+          {enviando && <Spinner className="h-5 w-5" />}
+          {enviando ? "Ingresando…" : "Ingresar"}
+        </button>
+      </form>
+    </AuthCard>
   );
 }

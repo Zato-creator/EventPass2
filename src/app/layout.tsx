@@ -1,8 +1,24 @@
 import type { Metadata } from "next";
+import { Bricolage_Grotesque, Figtree } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { ChatWidget } from "@/components/ChatWidget";
+
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+  variable: "--font-bricolage",
+  display: "swap",
+});
+
+const figtree = Figtree({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-figtree",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "EventPass Colegios",
@@ -11,14 +27,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es">
-      <body className="min-h-screen">
+    <html lang="es" className={`${bricolage.variable} ${figtree.variable}`}>
+      <body className="flex min-h-screen flex-col overflow-x-clip font-sans antialiased">
         <AuthProvider>
           <Header />
-          <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
-          <footer className="py-8 text-center text-sm text-slate-500">
-            EventPass Colegios · Proyecto académico
-          </footer>
+          <main className="mx-auto w-full max-w-[1200px] flex-1 px-6 py-8">{children}</main>
+          <Footer />
           <ChatWidget />
         </AuthProvider>
       </body>
