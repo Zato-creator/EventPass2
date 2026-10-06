@@ -37,7 +37,9 @@ export function wf04(cfg) {
 
   wf.code("Validar formulario", function () {
     const f = $('Formulario administrador').first().json;
-    const v = (k) => (f[k] === undefined || f[k] === null || f[k] === '—' ? '' : String(f[k]).trim());
+    // Un campo number vacío llega como null, NaN o 0 según la versión del Form Trigger: se trata como vacío
+    // (en CREATE eso produce "Falta el campo capacidad").
+    const v = (k) => (f[k] === undefined || f[k] === null || f[k] === '—' || f[k] === 0 || ['', 'NaN', '0'].includes(String(f[k]).trim()) ? '' : String(f[k]).trim());
     const accion = v('Acción');
     const d = {
       evento_id: v('ID del evento').toUpperCase(), nombre: v('Nombre'), categoria: v('Categoría'),
