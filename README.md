@@ -99,7 +99,7 @@ Login exitoso → token aleatorio de 32 bytes (hex), fila ACTIVA en EP02 con `ex
 
 ## 10. Idempotencia
 - **Inscripciones:** antes de crear se buscan inscripciones CONFIRMADA o LISTA_ESPERA con el mismo `usuario_id + evento_id`; si existe se responde `409 INSCRIPCION_DUPLICADA` y se audita el rechazo.
-- **Recordatorios:** `clave_idempotencia = usuario_id|evento_id|tipo_recordatorio`; si ya existe ENVIADO, no se reenvía.
+- **Recordatorios:** `clave_idempotencia = usuario_id|evento_id|tipo_recordatorio`; si la clave ya existe en EP08 (ENVIADO, ERROR u OMITIDO) no se vuelve a enviar. Si una inscripción se detecta cuando ya falta ≤1 h, el R24H se registra OMITIDO y solo se envía el R1H.
 - **Notificaciones:** WF09 recibe una `clave_idempotencia` y no reenvía si ya fue enviada.
 - **Códigos Telegram:** un código USADO no puede volver a usarse.
 - Limitación conocida: Google Sheets no tiene transacciones; se relee justo antes de escribir para reducir la ventana de carrera. _TODO_
@@ -131,11 +131,16 @@ npm install
 cp .env.example .env.local     # completar valores
 npm run dev                    # http://localhost:3000
 ```
-n8n: importar los JSON de `n8n/`, crear credenciales (Google Sheets, Gmail, Telegram, Header Auth, modelo IA), crear los 10 Google Sheets con los encabezados de `docs/MODELO_DATOS.md`, apuntar cada nodo de Sheets a su archivo y activar los workflows.
+n8n (guía completa en [`docs/N8N_PASO_A_PASO.md`](docs/N8N_PASO_A_PASO.md)):
+1. Crear los 10 Google Sheets con `scripts/google/crear_sheets.gs` (Apps Script: crea carpeta, archivos, hojas y encabezados).
+2. Crear credenciales en n8n (Google Sheets, Gmail, Telegram, Header Auth `X-EP-Key`, Basic Auth del formulario, OpenAI).
+3. Importar los JSON de `n8n/` (o generarlos con `node scripts/n8n/generar.mjs` a partir de `scripts/n8n/config.local.json`), asignar credenciales y activar los workflows.
 
 ## 16. Documentación adicional
 - [`docs/SETUP_PASO_A_PASO.md`](docs/SETUP_PASO_A_PASO.md) — instalación y flujo con GitHub/Vercel.
 - [`docs/PLAN_19H.md`](docs/PLAN_19H.md) — plan de trabajo.
 - [`docs/CONTRATOS_API.md`](docs/CONTRATOS_API.md) — contratos.
 - [`docs/MODELO_DATOS.md`](docs/MODELO_DATOS.md) — hojas y datos de prueba.
+- [`docs/N8N_PASO_A_PASO.md`](docs/N8N_PASO_A_PASO.md) — Sheets, credenciales, importación y activación de workflows.
+- `scripts/n8n/` — generador de los workflows (los Code nodes están escritos como JS legible). `scripts/google/` — script que crea los Sheets.
 - `docs/workflows/` — detalle por workflow. `docs/capturas/` — evidencias.

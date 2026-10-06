@@ -124,8 +124,8 @@ Duración de sesión: **12 horas**.
 Entrada: `{ "session_token": "…" }`
 Salida:
 ```json
-{ "valida": true, "usuario_id": "USR-…", "session_id": "SES-…", "motivo": null }
-{ "valida": false, "usuario_id": null, "session_id": null, "motivo": "NO_EXISTE | CERRADA | EXPIRADA | USUARIO_INACTIVO" }
+{ "valida": true, "usuario_id": "USR-…", "session_id": "SES-…", "expira_en": "2026-10-06T08:20:00-05:00", "motivo": null }
+{ "valida": false, "usuario_id": null, "session_id": "SES-…|null", "expira_en": "…|null", "motivo": "NO_EXISTE | CERRADA | EXPIRADA | USUARIO_INACTIVO" }
 ```
 Efectos: actualiza `ultima_validacion`; si está vencida la marca `EXPIRADA`.
 Lo usan WF01 (privadas), WF02 `validar`, WF03 (webhook) y WF06.
@@ -248,7 +248,7 @@ Entrada:
   "clave_idempotencia": "INSCRIPCION_CONFIRMADA|INS-…"
 }
 ```
-Salida: `{ "notificacion_id", "gmail_estado", "telegram_estado", "duplicada": boolean }`.
+Salida: `{ "notificacion_id", "gmail_estado", "telegram_estado", "duplicada": boolean, "usuario_id", "evento_id", "inscripcion_id", "clave_idempotencia" }` (los últimos cuatro se devuelven para que WF07/WF08 relacionen cada resultado cuando llaman en modo "por ítem").
 Si `clave_idempotencia` ya existe en EP09 con algún canal ENVIADO → no reenvía, `duplicada: true`.
 Gmail y Telegram en ramas independientes con *On Error → Continue (using error output)*. Sin `chat_id` → `telegram_estado = NO_APLICA`.
 

@@ -117,6 +117,7 @@ reasignacion_id	evento_id	inscripcion_id	usuario_id	fecha	orden_lista	estado_ant
 recordatorio_id	usuario_id	evento_id	inscripcion_id	tipo_recordatorio	fecha_programada	fecha_envio	estado	clave_idempotencia
 ```
 Tipos: `R24H` (faltan ≤24 h), `R1H` (falta ≤1 h). Estados: `PENDIENTE`, `ENVIADO`, `ERROR`, `OMITIDO`.
+`OMITIDO`: la inscripción se detectó cuando ya faltaba ≤1 h, así que el R24H no se envía (se registra una sola vez como OMITIDO) y solo se envía el R1H. Si la clave ya existe en cualquier estado, WF08 no vuelve a enviar.
 `clave_idempotencia` = `usuario_id|evento_id|tipo_recordatorio`.
 
 ## EP09_Notificaciones
@@ -145,13 +146,13 @@ Roles: `USER`, `ASSISTANT`, `SYSTEM`.
 
 ## Datos de prueba (EP04) — temática colegios
 
-Cargarlos con el **Form Trigger de WF04** (así quedan en auditoría). Fechas pensadas para la entrega del 6 de octubre de 2026; si la evaluación es otro día, ajustar EVT-03 para que siga siendo "próximo".
+Cargarlos con el **Form Trigger de WF04** (así quedan en auditoría). Los eventos CANCELADO y CERRADO se crean como PUBLICADO y luego se les aplica CANCELAR / CERRAR desde el mismo formulario (así la auditoría muestra la transición). Fechas pensadas para la entrega del 6 de octubre de 2026; si la evaluación es otro día, ajustar EVT-03 para que siga siendo "próximo".
 
 | # | Nombre | Categoría | Fecha / hora | Lugar | Capacidad | Estado | Rol en la prueba |
 |---|---|---|---|---|---|---|---|
 | 1 | Feria de Ciencias Intercolegial 2026 | Académico | 2026-10-20 08:00 | Coliseo Colegio San Pedro | 120 | PUBLICADO | **Con cupos disponibles** |
 | 2 | Taller de Robótica con Arduino | Tecnología | 2026-10-14 14:00 | Laboratorio de Sistemas, Bloque C | 2 | PUBLICADO | **Lleno** (2 confirmadas de prueba) |
-| 3 | Escuela de Padres: Uso Seguro de Redes | Comunidad | 2026-10-07 18:00 | Auditorio Principal | 80 | PUBLICADO | **Próximo** (dispara R24H) |
+| 3 | Escuela de Padres: Uso Seguro de Redes | Comunidad | 2026-10-07 09:00 | Auditorio Principal | 80 | PUBLICADO | **Próximo** (dispara R24H desde el 6-oct 09:00) |
 | 4 | Torneo Intercolegial de Microfútbol | Deportes | 2026-10-25 09:00 | Cancha Múltiple Municipal | 64 | PUBLICADO | Disponible |
 | 5 | Muestra Cultural: Danzas Colombianas | Cultura | 2026-10-30 16:00 | Teatro del Colegio | 150 | **CANCELADO** | **Cancelado** |
 | 6 | Olimpiadas de Matemáticas — Fase Local | Académico | 2026-09-28 07:30 | Aulas 101–110 | 60 | **CERRADO** | **Cerrado** |

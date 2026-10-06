@@ -42,6 +42,8 @@ Documentos de referencia (leer antes de tocar algo relacionado):
 
 Solo existe la rama `main`. No se crean ramas. Para no pisarnos, **cada archivo tiene dueño**.
 
+> **Modo individual (vigente):** el enunciado exige entrega individual y el proyecto lo desarrolla una sola persona, que asume los roles DEV-A y DEV-B. Si `CLAUDE.local.md` dice "Soy DEV-A y DEV-B", Claude puede editar todos los archivos. La tabla se conserva por si se suma un colaborador.
+
 | Dueño | Frontend | n8n / Sheets | Docs |
 |---|---|---|---|
 | **DEV-A (principal)** | `src/lib/**`, `src/types/**`, `src/context/**`, `src/app/api/**`, `middleware.ts`, `package.json`, `next.config.*`, `.env.example` | WF01, WF02, WF03, WF06, WF07, WF09, WF11 · EP01, EP02, EP03, EP06, EP07, EP09 | `CLAUDE.md`, `README.md`, `docs/CONTRATOS_API.md`, `docs/MODELO_DATOS.md` |
