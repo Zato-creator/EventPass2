@@ -31,3 +31,7 @@ Thumbs.db
 # Claude: identidad local de cada dev
 CLAUDE.local.md
 .claude/settings.local.json
+
+# n8n: configuración local y JSON generados para importar (los entregables se exportan desde n8n a n8n/)
+scripts/n8n/config.local.json
+n8n/_import/

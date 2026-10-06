@@ -1,0 +1,29 @@
+{
+  "n8nBaseUrl": "https://TU-INSTANCIA.app.n8n.cloud",
+  "telegramBotUsername": "EventPassColegiosBot",
+  "chatAllowedOrigins": "http://localhost:3000,https://TU-PROYECTO.vercel.app",
+  "sheets": {
+    "EP01": "",
+    "EP02": "",
+    "EP03": "",
+    "EP04": "",
+    "EP05": "",
+    "EP06": "",
+    "EP07": "",
+    "EP08": "",
+    "EP09": "",
+    "EP10": ""
+  },
+  "workflows": {
+    "WF09": "",
+    "WF11": ""
+  },
+  "credenciales": {
+    "googleSheets": { "id": "", "name": "Google Sheets EventPass" },
+    "gmail": { "id": "", "name": "Gmail EventPass" },
+    "telegram": { "id": "", "name": "Telegram EventPass Bot" },
+    "headerAuth": { "id": "", "name": "EP API Key (X-EP-Key)" },
+    "basicAuth": { "id": "", "name": "Admin formulario eventos" },
+    "openAi": { "id": "", "name": "OpenAI EventPass" }
+  }
+}
