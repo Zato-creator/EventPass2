@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Disponibilidad, EventoPublico } from "@/types/api";
+import { fechaEvento } from "@/lib/fechas";
 
 const etiqueta: Record<Disponibilidad, { texto: string; clase: string }> = {
   DISPONIBLE: { texto: "Cupos disponibles", clase: "bg-green-100 text-green-800" },
@@ -8,8 +9,12 @@ const etiqueta: Record<Disponibilidad, { texto: string; clase: string }> = {
   CANCELADO: { texto: "Cancelado", clase: "bg-red-100 text-red-800" },
 };
 
+export function DisponibilidadBadge({ disponibilidad }: { disponibilidad: Disponibilidad }) {
+  const e = etiqueta[disponibilidad];
+  return <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${e.clase}`}>{e.texto}</span>;
+}
+
 export function EventoCard({ evento }: { evento: EventoPublico }) {
-  const e = etiqueta[evento.disponibilidad];
   return (
     <Link
       href={`/eventos/${evento.evento_id}`}
@@ -23,10 +28,10 @@ export function EventoCard({ evento }: { evento: EventoPublico }) {
         <span className="text-xs font-semibold uppercase text-marca">{evento.categoria}</span>
         <h3 className="font-bold leading-tight">{evento.nombre}</h3>
         <p className="text-sm text-slate-600">
-          📅 {evento.fecha} · {evento.hora} <br />📍 {evento.lugar}
+          📅 {fechaEvento(evento.fecha, evento.hora)} <br />📍 {evento.lugar}
         </p>
         <div className="mt-auto flex items-center justify-between pt-2">
-          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${e.clase}`}>{e.texto}</span>
+          <DisponibilidadBadge disponibilidad={evento.disponibilidad} />
           {evento.disponibilidad === "DISPONIBLE" && (
             <span className="text-sm text-slate-700">{evento.cupos_disponibles} cupos</span>
           )}

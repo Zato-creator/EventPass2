@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { Header } from "@/components/Header";
+import { ChatWidget } from "@/components/ChatWidget";
 
 export const metadata: Metadata = {
   title: "EventPass Colegios",
@@ -18,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <footer className="py-8 text-center text-sm text-slate-500">
             EventPass Colegios · Proyecto académico
           </footer>
-          {/* TODO(DEV-B): widget de chat WF10 con @n8n/chat */}
+          <ChatWidget />
         </AuthProvider>
       </body>
     </html>

@@ -14,3 +14,16 @@ body {
   color: var(--color-texto);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
+
+/* Widget del asistente (@n8n/chat) con la paleta institucional */
+:root {
+  --chat--color-primary: #1e3a8a;
+  --chat--color-primary-shade-50: #1b347c;
+  --chat--color-primary-shade-100: #172c6b;
+  --chat--color-secondary: #f59e0b;
+  --chat--color-secondary-shade-50: #d98b09;
+  --chat--toggle--background: #1e3a8a;
+  --chat--toggle--hover--background: #172c6b;
+  --chat--header--background: #1e3a8a;
+  --chat--message--user--background: #1e3a8a;
+}
