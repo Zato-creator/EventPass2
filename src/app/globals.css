@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+/* Identidad visual EventPass Colegios — DEV-B puede ajustar la paleta */
+@theme {
+  --color-marca: #1e3a8a;        /* azul institucional */
+  --color-marca-claro: #dbeafe;
+  --color-acento: #f59e0b;       /* amarillo escolar */
+  --color-fondo: #f8fafc;
+  --color-texto: #0f172a;
+}
+
+body {
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
