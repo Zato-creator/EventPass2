@@ -133,6 +133,24 @@ Los JSON se exportaron desde la instancia de n8n y están en [`n8n/`](n8n/).
 
 **WF07 también escribe en EP06,** porque la inscripción vive allí. Solo cambia el estado de LISTA_ESPERA a CONFIRMADA. Su registro principal, la reasignación, va en EP07.
 
+### Enlaces a los Google Sheets
+
+| Archivo             | Enlace                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------- |
+| EP01_Usuarios       | [Abrir](https://docs.google.com/spreadsheets/d/1yo4x0J0lKwDRfMmvWRDeO8Wx17T2GhN-MJt4RrIgqbI/edit) |
+| EP02_Sesiones       | [Abrir](https://docs.google.com/spreadsheets/d/1qzXibxZVb2VjSehzpd3uppIPVVshYyehjkFd8sESRy4/edit) |
+| EP03_Telegram       | [Abrir](https://docs.google.com/spreadsheets/d/1fyX3wz87_pxIr0eb0KX8yt78_ZkXwSvadAakHLBl7EQ/edit) |
+| EP04_Eventos        | [Abrir](https://docs.google.com/spreadsheets/d/1U0fMnijETqSfEMX2CCEN-aDyxnZngAitVaS30edctFg/edit) |
+| EP05_Catalogo_Log   | [Abrir](https://docs.google.com/spreadsheets/d/1pD2L330PwUKClkb-yirTK95YTeOMHzhk1nXb92eHrOU/edit) |
+| EP06_Inscripciones  | [Abrir](https://docs.google.com/spreadsheets/d/1RR-snmqULYGKftHoODFx1lPrjedw0D9At9D5G4ovaCQ/edit) |
+| EP07_Reasignaciones | [Abrir](https://docs.google.com/spreadsheets/d/1bAO68LB7wjk3S8Tj-Pq7qDDl03ZowCkZEKHS9Td0Dl8/edit) |
+| EP08_Recordatorios  | [Abrir](https://docs.google.com/spreadsheets/d/1NZlDlnZveQVKL-Khosza0dBJigJ6GZTUKtgIPi5ZggY/edit) |
+| EP09_Notificaciones | [Abrir](https://docs.google.com/spreadsheets/d/1KRrW1KHpnHXTjqy0RSytAdSH9-8L51gNx0gzw2CPnpM/edit) |
+| EP10_Soporte        | [Abrir](https://docs.google.com/spreadsheets/d/16-YtZATAx2NIjOnPYRSIwnL8ZppPAnzMC4ANVaVavk0/edit) |
+| EP11_Checkin (examen) | [Abrir](https://docs.google.com/spreadsheets/d/1oyjElVAaZPVZC2TePzkW8hlruNTlAzwV_TgErPhSL7c/edit) |
+
+El acceso es de solo lectura y se da a quien evalúa el proyecto. Si un enlace pide permiso, hay que solicitar acceso desde la misma página.
+
 Las columnas exactas de cada hoja están en [`docs/MODELO_DATOS.md`](docs/MODELO_DATOS.md). Los nodos de cada workflow tienen nombres por responsabilidad, por ejemplo `Validar datos`, `Leer usuarios (EP01)`, `¿Email duplicado?`, `Generar hash + salt`, `Calcular cupos (capacidad − CONFIRMADAS)`, `Responder JSON`.
 
 ---
@@ -572,6 +590,8 @@ La validación de duplicado va **antes** de la de estado. Así, un segundo inten
 Las tres usan _Always Output Data_, así que una búsqueda vacía no detiene el flujo.
 
 ### Google Sheets: `EP11_Checkin`, hoja `Checkins`
+
+Enlace: [EP11_Checkin](https://docs.google.com/spreadsheets/d/1oyjElVAaZPVZC2TePzkW8hlruNTlAzwV_TgErPhSL7c/edit). Los demás archivos están en la sección [4](#enlaces-a-los-google-sheets).
 
 | Columna          | Ejemplo                                                      |
 | ---------------- | ------------------------------------------------------------ |
