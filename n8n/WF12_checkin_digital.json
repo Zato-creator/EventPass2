@@ -1,0 +1,1121 @@
+{
+  "name": "WF12_checkin_digital",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ep/checkin-digital",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1b64c455-558f-4ae8-a134-8da5cf56a4aa",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "62781b83-6d1c-4aac-a01f-5562ff329ffe",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "VX9egaSKtUsqc7ww",
+          "name": "EP API Key (X-EP-Key)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── utilidades EventPass (zona America/Bogota, UTC-5 sin horario de verano) ──\nconst BOGOTA_MS = 5 * 3600 * 1000;\nconst ahoraISO = (d = new Date()) => new Date(d.getTime() - BOGOTA_MS).toISOString().slice(0, 19) + '-05:00';\nconst genId = (p) => p + '-' + new Date(Date.now() - BOGOTA_MS).toISOString().slice(0, 19).replace(/[-T:]/g, '') + '-' + Math.floor(Math.random() * 0x10000).toString(16).toUpperCase().padStart(4, '0');\nconst filas = (nodo) => $(nodo).all().map((i) => i.json).filter((r) => r && Object.entries(r).some(([k, v]) => k !== 'row_number' && v !== '' && v !== null && v !== undefined));\nconst inicioEvento = (e) => new Date(String(e.fecha).slice(0, 10) + 'T' + (String(e.hora || '00:00').slice(0, 5)) + ':00-05:00');\nconst ok = (status, data, extra = {}) => ({ json: { _status: status, _body: { ok: true, data }, ...extra } });\nconst err = (status, code, message, extra = {}) => ({ json: { _status: status, _body: { ok: false, error: { code, message } }, ...extra } });\nconst aud = (o) => ({ auditoria_id: genId('AUD'), fecha: ahoraISO(), ...o });\n// ─────────────────────────────────────────────────────────────────────────────\n\nconst req = $('Webhook').first().json;\nconst b = req.body && typeof req.body === 'object' ? req.body : {};\nconst inscripcion_id = String(b.inscripcion_id ?? '').trim();\nconst evento_id = String(b.evento_id ?? '').trim();\nreturn [{ json: { inscripcion_id, evento_id, datos_completos: !!inscripcion_id && !!evento_id } }];"
+      },
+      "id": "f30c9d6b-984d-47f0-a1bd-8a09f6859c7a",
+      "name": "Leer solicitud",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b86ed616-bb13-42e4-abc3-7a93e26471be",
+              "leftValue": "={{ $json.datos_completos === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b86ed616-bb13-42e4-abc3-7a93e26471be",
+      "name": "¿Datos completos?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        520,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "1RR-snmqULYGKftHoODFx1lPrjedw0D9At9D5G4ovaCQ",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Inscripciones",
+          "mode": "name"
+        },
+        "options": {},
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "inscripcion_id",
+              "lookupValue": "={{ $('Leer solicitud').first().json.inscripcion_id }}"
+            }
+          ]
+        }
+      },
+      "id": "dc321bb9-a14e-4c7c-ae4e-f1318e50cba0",
+      "name": "Leer inscripción (EP06)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        780,
+        0
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "UeZNUwum7G50FcCl",
+          "name": "Google Sheets EventPass"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "1U0fMnijETqSfEMX2CCEN-aDyxnZngAitVaS30edctFg",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Eventos",
+          "mode": "name"
+        },
+        "options": {},
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "evento_id",
+              "lookupValue": "={{ $('Leer solicitud').first().json.evento_id }}"
+            }
+          ]
+        }
+      },
+      "id": "5e2fa924-b4f3-4c6f-ae70-57ab53d84ef8",
+      "name": "Leer evento (EP04)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1040,
+        0
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "UeZNUwum7G50FcCl",
+          "name": "Google Sheets EventPass"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "REEMPLAZAR_ID_EP11_CHECKIN",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Checkins",
+          "mode": "name"
+        },
+        "options": {},
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "inscripcion_id",
+              "lookupValue": "={{ $('Leer solicitud').first().json.inscripcion_id }}"
+            }
+          ]
+        }
+      },
+      "id": "038579e3-cfab-4bba-a939-b36e34cba2d1",
+      "name": "Leer historial de check-ins (EP11)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1300,
+        0
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "UeZNUwum7G50FcCl",
+          "name": "Google Sheets EventPass"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── utilidades EventPass (zona America/Bogota, UTC-5 sin horario de verano) ──\nconst BOGOTA_MS = 5 * 3600 * 1000;\nconst ahoraISO = (d = new Date()) => new Date(d.getTime() - BOGOTA_MS).toISOString().slice(0, 19) + '-05:00';\nconst genId = (p) => p + '-' + new Date(Date.now() - BOGOTA_MS).toISOString().slice(0, 19).replace(/[-T:]/g, '') + '-' + Math.floor(Math.random() * 0x10000).toString(16).toUpperCase().padStart(4, '0');\nconst filas = (nodo) => $(nodo).all().map((i) => i.json).filter((r) => r && Object.entries(r).some(([k, v]) => k !== 'row_number' && v !== '' && v !== null && v !== undefined));\nconst inicioEvento = (e) => new Date(String(e.fecha).slice(0, 10) + 'T' + (String(e.hora || '00:00').slice(0, 5)) + ':00-05:00');\nconst ok = (status, data, extra = {}) => ({ json: { _status: status, _body: { ok: true, data }, ...extra } });\nconst err = (status, code, message, extra = {}) => ({ json: { _status: status, _body: { ok: false, error: { code, message } }, ...extra } });\nconst aud = (o) => ({ auditoria_id: genId('AUD'), fecha: ahoraISO(), ...o });\n// ─────────────────────────────────────────────────────────────────────────────\n\nconst s = $('Leer solicitud').first().json;\nconst i = filas('Leer inscripción (EP06)').find((x) => String(x.inscripcion_id) === s.inscripcion_id);\nconst e = filas('Leer evento (EP04)').find((x) => String(x.evento_id) === s.evento_id);\nconst previos = filas('Leer historial de check-ins (EP11)').filter((c) => String(c.inscripcion_id) === s.inscripcion_id && c.resultado === 'EXITOSO');\nreturn [{ json: {\n  inscripcion_id: s.inscripcion_id, evento_id: s.evento_id,\n  usuario_id: i ? String(i.usuario_id) : '',\n  estado_actual: i ? String(i.estado) : '',\n  evento_inscripcion: i ? String(i.evento_id) : '',\n  evento_nombre: e ? String(e.nombre) : '', evento_fecha: e ? String(e.fecha).slice(0, 10) : '', evento_hora: e ? String(e.hora || '').slice(0, 5) : '',\n  inscripcion_existe: !!i,\n  evento_existe: !!e,\n  pertenece_al_evento: !!i && String(i.evento_id) === s.evento_id,\n  es_duplicado: previos.length > 0 || (!!i && i.estado === 'ASISTIO'),\n  esta_confirmada: !!i && i.estado === 'CONFIRMADA',\n} }];"
+      },
+      "id": "bafbd9b9-fa23-4eba-abe4-1df63dac1a3d",
+      "name": "Preparar validaciones",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "596362fc-71eb-46dd-ad37-f440881ac1d3",
+              "leftValue": "={{ $json.inscripcion_existe === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "596362fc-71eb-46dd-ad37-f440881ac1d3",
+      "name": "¿Inscripción existe?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1820,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "38de8097-7e71-416d-af18-15b43c7c67e3",
+              "leftValue": "={{ $('Preparar validaciones').first().json.evento_existe === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "38de8097-7e71-416d-af18-15b43c7c67e3",
+      "name": "¿Evento existe?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2080,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "de237ea9-68b3-48ad-a3b6-e6553e71eeea",
+              "leftValue": "={{ $('Preparar validaciones').first().json.pertenece_al_evento === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "de237ea9-68b3-48ad-a3b6-e6553e71eeea",
+      "name": "¿Pertenece al evento?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2340,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "71bedba2-b215-4c6e-aceb-bde6edede707",
+              "leftValue": "={{ $('Preparar validaciones').first().json.es_duplicado === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "71bedba2-b215-4c6e-aceb-bde6edede707",
+      "name": "¿Ingreso ya registrado? (anti-duplicado)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2600,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "77da88c1-e156-4322-aa6a-357364d33833",
+              "leftValue": "={{ $('Preparar validaciones').first().json.esta_confirmada === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "77da88c1-e156-4322-aa6a-357364d33833",
+      "name": "¿Estado CONFIRMADA?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2860,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── utilidades EventPass (zona America/Bogota, UTC-5 sin horario de verano) ──\nconst BOGOTA_MS = 5 * 3600 * 1000;\nconst ahoraISO = (d = new Date()) => new Date(d.getTime() - BOGOTA_MS).toISOString().slice(0, 19) + '-05:00';\nconst genId = (p) => p + '-' + new Date(Date.now() - BOGOTA_MS).toISOString().slice(0, 19).replace(/[-T:]/g, '') + '-' + Math.floor(Math.random() * 0x10000).toString(16).toUpperCase().padStart(4, '0');\nconst filas = (nodo) => $(nodo).all().map((i) => i.json).filter((r) => r && Object.entries(r).some(([k, v]) => k !== 'row_number' && v !== '' && v !== null && v !== undefined));\nconst inicioEvento = (e) => new Date(String(e.fecha).slice(0, 10) + 'T' + (String(e.hora || '00:00').slice(0, 5)) + ':00-05:00');\nconst ok = (status, data, extra = {}) => ({ json: { _status: status, _body: { ok: true, data }, ...extra } });\nconst err = (status, code, message, extra = {}) => ({ json: { _status: status, _body: { ok: false, error: { code, message } }, ...extra } });\nconst aud = (o) => ({ auditoria_id: genId('AUD'), fecha: ahoraISO(), ...o });\n// ─────────────────────────────────────────────────────────────────────────────\n\nreturn [{ json: { resultado: 'RECHAZADO', status: 400, detalle: `Faltan datos: se requieren inscripcion_id y evento_id` } }];"
+      },
+      "id": "a8471667-0028-462c-ae55-6b6cccf17d5e",
+      "name": "Veredicto: datos incompletos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── utilidades EventPass (zona America/Bogota, UTC-5 sin horario de verano) ──\nconst BOGOTA_MS = 5 * 3600 * 1000;\nconst ahoraISO = (d = new Date()) => new Date(d.getTime() - BOGOTA_MS).toISOString().slice(0, 19) + '-05:00';\nconst genId = (p) => p + '-' + new Date(Date.now() - BOGOTA_MS).toISOString().slice(0, 19).replace(/[-T:]/g, '') + '-' + Math.floor(Math.random() * 0x10000).toString(16).toUpperCase().padStart(4, '0');\nconst filas = (nodo) => $(nodo).all().map((i) => i.json).filter((r) => r && Object.entries(r).some(([k, v]) => k !== 'row_number' && v !== '' && v !== null && v !== undefined));\nconst inicioEvento = (e) => new Date(String(e.fecha).slice(0, 10) + 'T' + (String(e.hora || '00:00').slice(0, 5)) + ':00-05:00');\nconst ok = (status, data, extra = {}) => ({ json: { _status: status, _body: { ok: true, data }, ...extra } });\nconst err = (status, code, message, extra = {}) => ({ json: { _status: status, _body: { ok: false, error: { code, message } }, ...extra } });\nconst aud = (o) => ({ auditoria_id: genId('AUD'), fecha: ahoraISO(), ...o });\n// ─────────────────────────────────────────────────────────────────────────────\n\nreturn [{ json: { resultado: 'RECHAZADO', status: 404, detalle: `Inscripción inexistente` } }];"
+      },
+      "id": "de4e4605-5685-4c3f-aea1-bd76dd02a332",
+      "name": "Veredicto: inscripción inexistente",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── utilidades EventPass (zona America/Bogota, UTC-5 sin horario de verano) ──\nconst BOGOTA_MS = 5 * 3600 * 1000;\nconst ahoraISO = (d = new Date()) => new Date(d.getTime() - BOGOTA_MS).toISOString().slice(0, 19) + '-05:00';\nconst genId = (p) => p + '-' + new Date(Date.now() - BOGOTA_MS).toISOString().slice(0, 19).replace(/[-T:]/g, '') + '-' + Math.floor(Math.random() * 0x10000).toString(16).toUpperCase().padStart(4, '0');\nconst filas = (nodo) => $(nodo).all().map((i) => i.json).filter((r) => r && Object.entries(r).some(([k, v]) => k !== 'row_number' && v !== '' && v !== null && v !== undefined));\nconst inicioEvento = (e) => new Date(String(e.fecha).slice(0, 10) + 'T' + (String(e.hora || '00:00').slice(0, 5)) + ':00-05:00');\nconst ok = (status, data, extra = {}) => ({ json: { _status: status, _body: { ok: true, data }, ...extra } });\nconst err = (status, code, message, extra = {}) => ({ json: { _status: status, _body: { ok: false, error: { code, message } }, ...extra } });\nconst aud = (o) => ({ auditoria_id: genId('AUD'), fecha: ahoraISO(), ...o });\n// ─────────────────────────────────────────────────────────────────────────────\n\nreturn [{ json: { resultado: 'RECHAZADO', status: 404, detalle: `Evento inexistente` } }];"
+      },
+      "id": "573a9f47-4def-4e93-ab30-eb2d9e35fde0",
+      "name": "Veredicto: evento inexistente",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2340,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── utilidades EventPass (zona America/Bogota, UTC-5 sin horario de verano) ──\nconst BOGOTA_MS = 5 * 3600 * 1000;\nconst ahoraISO = (d = new Date()) => new Date(d.getTime() - BOGOTA_MS).toISOString().slice(0, 19) + '-05:00';\nconst genId = (p) => p + '-' + new Date(Date.now() - BOGOTA_MS).toISOString().slice(0, 19).replace(/[-T:]/g, '') + '-' + Math.floor(Math.random() * 0x10000).toString(16).toUpperCase().padStart(4, '0');\nconst filas = (nodo) => $(nodo).all().map((i) => i.json).filter((r) => r && Object.entries(r).some(([k, v]) => k !== 'row_number' && v !== '' && v !== null && v !== undefined));\nconst inicioEvento = (e) => new Date(String(e.fecha).slice(0, 10) + 'T' + (String(e.hora || '00:00').slice(0, 5)) + ':00-05:00');\nconst ok = (status, data, extra = {}) => ({ json: { _status: status, _body: { ok: true, data }, ...extra } });\nconst err = (status, code, message, extra = {}) => ({ json: { _status: status, _body: { ok: false, error: { code, message } }, ...extra } });\nconst aud = (o) => ({ auditoria_id: genId('AUD'), fecha: ahoraISO(), ...o });\n// ─────────────────────────────────────────────────────────────────────────────\n\nreturn [{ json: { resultado: 'RECHAZADO', status: 422, detalle: `La inscripción pertenece a otro evento (${$('Preparar validaciones').first().json.evento_inscripcion})` } }];"
+      },
+      "id": "08b570fc-18aa-49d7-a334-c501f6e1826a",
+      "name": "Veredicto: otro evento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2600,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── utilidades EventPass (zona America/Bogota, UTC-5 sin horario de verano) ──\nconst BOGOTA_MS = 5 * 3600 * 1000;\nconst ahoraISO = (d = new Date()) => new Date(d.getTime() - BOGOTA_MS).toISOString().slice(0, 19) + '-05:00';\nconst genId = (p) => p + '-' + new Date(Date.now() - BOGOTA_MS).toISOString().slice(0, 19).replace(/[-T:]/g, '') + '-' + Math.floor(Math.random() * 0x10000).toString(16).toUpperCase().padStart(4, '0');\nconst filas = (nodo) => $(nodo).all().map((i) => i.json).filter((r) => r && Object.entries(r).some(([k, v]) => k !== 'row_number' && v !== '' && v !== null && v !== undefined));\nconst inicioEvento = (e) => new Date(String(e.fecha).slice(0, 10) + 'T' + (String(e.hora || '00:00').slice(0, 5)) + ':00-05:00');\nconst ok = (status, data, extra = {}) => ({ json: { _status: status, _body: { ok: true, data }, ...extra } });\nconst err = (status, code, message, extra = {}) => ({ json: { _status: status, _body: { ok: false, error: { code, message } }, ...extra } });\nconst aud = (o) => ({ auditoria_id: genId('AUD'), fecha: ahoraISO(), ...o });\n// ─────────────────────────────────────────────────────────────────────────────\n\nreturn [{ json: { resultado: 'DUPLICADO', status: 409, detalle: `El ingreso ya había sido registrado` } }];"
+      },
+      "id": "11679339-14ab-4f0a-a3fb-e7fd069a572d",
+      "name": "Veredicto: duplicado",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2860,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── utilidades EventPass (zona America/Bogota, UTC-5 sin horario de verano) ──\nconst BOGOTA_MS = 5 * 3600 * 1000;\nconst ahoraISO = (d = new Date()) => new Date(d.getTime() - BOGOTA_MS).toISOString().slice(0, 19) + '-05:00';\nconst genId = (p) => p + '-' + new Date(Date.now() - BOGOTA_MS).toISOString().slice(0, 19).replace(/[-T:]/g, '') + '-' + Math.floor(Math.random() * 0x10000).toString(16).toUpperCase().padStart(4, '0');\nconst filas = (nodo) => $(nodo).all().map((i) => i.json).filter((r) => r && Object.entries(r).some(([k, v]) => k !== 'row_number' && v !== '' && v !== null && v !== undefined));\nconst inicioEvento = (e) => new Date(String(e.fecha).slice(0, 10) + 'T' + (String(e.hora || '00:00').slice(0, 5)) + ':00-05:00');\nconst ok = (status, data, extra = {}) => ({ json: { _status: status, _body: { ok: true, data }, ...extra } });\nconst err = (status, code, message, extra = {}) => ({ json: { _status: status, _body: { ok: false, error: { code, message } }, ...extra } });\nconst aud = (o) => ({ auditoria_id: genId('AUD'), fecha: ahoraISO(), ...o });\n// ─────────────────────────────────────────────────────────────────────────────\n\nreturn [{ json: { resultado: 'RECHAZADO', status: 422, detalle: `La inscripción no está CONFIRMADA (estado actual: ${$('Preparar validaciones').first().json.estado_actual})` } }];"
+      },
+      "id": "097cc6ea-cec9-469a-afde-324442c39873",
+      "name": "Veredicto: estado no permitido",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── utilidades EventPass (zona America/Bogota, UTC-5 sin horario de verano) ──\nconst BOGOTA_MS = 5 * 3600 * 1000;\nconst ahoraISO = (d = new Date()) => new Date(d.getTime() - BOGOTA_MS).toISOString().slice(0, 19) + '-05:00';\nconst genId = (p) => p + '-' + new Date(Date.now() - BOGOTA_MS).toISOString().slice(0, 19).replace(/[-T:]/g, '') + '-' + Math.floor(Math.random() * 0x10000).toString(16).toUpperCase().padStart(4, '0');\nconst filas = (nodo) => $(nodo).all().map((i) => i.json).filter((r) => r && Object.entries(r).some(([k, v]) => k !== 'row_number' && v !== '' && v !== null && v !== undefined));\nconst inicioEvento = (e) => new Date(String(e.fecha).slice(0, 10) + 'T' + (String(e.hora || '00:00').slice(0, 5)) + ':00-05:00');\nconst ok = (status, data, extra = {}) => ({ json: { _status: status, _body: { ok: true, data }, ...extra } });\nconst err = (status, code, message, extra = {}) => ({ json: { _status: status, _body: { ok: false, error: { code, message } }, ...extra } });\nconst aud = (o) => ({ auditoria_id: genId('AUD'), fecha: ahoraISO(), ...o });\n// ─────────────────────────────────────────────────────────────────────────────\n\nreturn [{ json: { resultado: 'EXITOSO', status: 200, detalle: `Check-in realizado correctamente` } }];"
+      },
+      "id": "a130192a-f6e6-4497-ae9e-5bde0c99a6de",
+      "name": "Veredicto: check-in exitoso",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── utilidades EventPass (zona America/Bogota, UTC-5 sin horario de verano) ──\nconst BOGOTA_MS = 5 * 3600 * 1000;\nconst ahoraISO = (d = new Date()) => new Date(d.getTime() - BOGOTA_MS).toISOString().slice(0, 19) + '-05:00';\nconst genId = (p) => p + '-' + new Date(Date.now() - BOGOTA_MS).toISOString().slice(0, 19).replace(/[-T:]/g, '') + '-' + Math.floor(Math.random() * 0x10000).toString(16).toUpperCase().padStart(4, '0');\nconst filas = (nodo) => $(nodo).all().map((i) => i.json).filter((r) => r && Object.entries(r).some(([k, v]) => k !== 'row_number' && v !== '' && v !== null && v !== undefined));\nconst inicioEvento = (e) => new Date(String(e.fecha).slice(0, 10) + 'T' + (String(e.hora || '00:00').slice(0, 5)) + ':00-05:00');\nconst ok = (status, data, extra = {}) => ({ json: { _status: status, _body: { ok: true, data }, ...extra } });\nconst err = (status, code, message, extra = {}) => ({ json: { _status: status, _body: { ok: false, error: { code, message } }, ...extra } });\nconst aud = (o) => ({ auditoria_id: genId('AUD'), fecha: ahoraISO(), ...o });\n// ─────────────────────────────────────────────────────────────────────────────\n\nconst v = $input.first().json;\nconst s = $('Leer solicitud').first().json;\nlet usuario_id = '';\ntry { usuario_id = $('Preparar validaciones').first().json.usuario_id; } catch (e) { usuario_id = ''; }\nreturn [{ json: {\n  checkin_id: genId('CHK'), inscripcion_id: s.inscripcion_id, evento_id: s.evento_id, usuario_id,\n  fecha_checkin: ahoraISO(), resultado: v.resultado, detalle: v.detalle, status: v.status,\n} }];"
+      },
+      "id": "e29151d9-6fbc-4a12-a3c9-b1226a140eeb",
+      "name": "Generar checkin_id y fecha",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3380,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "REEMPLAZAR_ID_EP11_CHECKIN",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Checkins",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "checkin_id": "={{ $('Generar checkin_id y fecha').first().json.checkin_id ?? '' }}",
+            "inscripcion_id": "={{ $('Generar checkin_id y fecha').first().json.inscripcion_id ?? '' }}",
+            "evento_id": "={{ $('Generar checkin_id y fecha').first().json.evento_id ?? '' }}",
+            "usuario_id": "={{ $('Generar checkin_id y fecha').first().json.usuario_id ?? '' }}",
+            "fecha_checkin": "={{ $('Generar checkin_id y fecha').first().json.fecha_checkin ?? '' }}",
+            "resultado": "={{ $('Generar checkin_id y fecha').first().json.resultado ?? '' }}",
+            "detalle": "={{ $('Generar checkin_id y fecha').first().json.detalle ?? '' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "checkin_id",
+              "displayName": "checkin_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "inscripcion_id",
+              "displayName": "inscripcion_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "evento_id",
+              "displayName": "evento_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "usuario_id",
+              "displayName": "usuario_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_checkin",
+              "displayName": "fecha_checkin",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "resultado",
+              "displayName": "resultado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "detalle",
+              "displayName": "detalle",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      },
+      "id": "39325381-e2fc-4e0a-af62-8a872a2c2fb4",
+      "name": "Registrar intento (EP11)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3640,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "UeZNUwum7G50FcCl",
+          "name": "Google Sheets EventPass"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7d8eac8a-e387-46e0-a325-dd095cceca21",
+              "leftValue": "={{ $('Generar checkin_id y fecha').first().json.resultado === 'EXITOSO' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "7d8eac8a-e387-46e0-a325-dd095cceca21",
+      "name": "¿Check-in EXITOSO?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3900,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1RR-snmqULYGKftHoODFx1lPrjedw0D9At9D5G4ovaCQ",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Inscripciones",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "inscripcion_id": "={{ $('Generar checkin_id y fecha').first().json.inscripcion_id }}",
+            "estado": "ASISTIO",
+            "fecha_actualizacion": "={{ $('Generar checkin_id y fecha').first().json.fecha_checkin }}"
+          },
+          "matchingColumns": [
+            "inscripcion_id"
+          ],
+          "schema": [
+            {
+              "id": "inscripcion_id",
+              "displayName": "inscripcion_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_actualizacion",
+              "displayName": "fecha_actualizacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      },
+      "id": "fae0ebdf-bf33-47aa-a109-28645b5a580e",
+      "name": "Marcar ASISTIO (EP06)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        4160,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "UeZNUwum7G50FcCl",
+          "name": "Google Sheets EventPass"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── utilidades EventPass (zona America/Bogota, UTC-5 sin horario de verano) ──\nconst BOGOTA_MS = 5 * 3600 * 1000;\nconst ahoraISO = (d = new Date()) => new Date(d.getTime() - BOGOTA_MS).toISOString().slice(0, 19) + '-05:00';\nconst genId = (p) => p + '-' + new Date(Date.now() - BOGOTA_MS).toISOString().slice(0, 19).replace(/[-T:]/g, '') + '-' + Math.floor(Math.random() * 0x10000).toString(16).toUpperCase().padStart(4, '0');\nconst filas = (nodo) => $(nodo).all().map((i) => i.json).filter((r) => r && Object.entries(r).some(([k, v]) => k !== 'row_number' && v !== '' && v !== null && v !== undefined));\nconst inicioEvento = (e) => new Date(String(e.fecha).slice(0, 10) + 'T' + (String(e.hora || '00:00').slice(0, 5)) + ':00-05:00');\nconst ok = (status, data, extra = {}) => ({ json: { _status: status, _body: { ok: true, data }, ...extra } });\nconst err = (status, code, message, extra = {}) => ({ json: { _status: status, _body: { ok: false, error: { code, message } }, ...extra } });\nconst aud = (o) => ({ auditoria_id: genId('AUD'), fecha: ahoraISO(), ...o });\n// ─────────────────────────────────────────────────────────────────────────────\n\nconst c = $('Generar checkin_id y fecha').first().json;\nconst v = $('Preparar validaciones').first().json;\nconst hora = c.fecha_checkin.slice(0, 10) + ' ' + c.fecha_checkin.slice(11, 16);\nreturn [{ json: {\n  usuario_id: c.usuario_id, tipo: 'CHECKIN_EXITOSO', titulo: `Ingreso registrado: ${v.evento_nombre}`,\n  mensaje: `Tu ingreso a \"${v.evento_nombre}\" quedó registrado.\\n🕒 ${hora} (hora Colombia)\\n🎫 Check-in: ${c.checkin_id}`,\n  evento_id: c.evento_id, inscripcion_id: c.inscripcion_id, clave_idempotencia: `CHECKIN_EXITOSO|${c.inscripcion_id}`,\n} }];"
+      },
+      "id": "f8ae4665-f774-4248-a2e0-6d6007cf2098",
+      "name": "Preparar notificación (check-in)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4420,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "FfJcfUF65ohRCkjr",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "3fa9700b-1996-42fe-af3a-6575a6b1e0a5",
+      "name": "Notificar check-in (WF09)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        4680,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ── utilidades EventPass (zona America/Bogota, UTC-5 sin horario de verano) ──\nconst BOGOTA_MS = 5 * 3600 * 1000;\nconst ahoraISO = (d = new Date()) => new Date(d.getTime() - BOGOTA_MS).toISOString().slice(0, 19) + '-05:00';\nconst genId = (p) => p + '-' + new Date(Date.now() - BOGOTA_MS).toISOString().slice(0, 19).replace(/[-T:]/g, '') + '-' + Math.floor(Math.random() * 0x10000).toString(16).toUpperCase().padStart(4, '0');\nconst filas = (nodo) => $(nodo).all().map((i) => i.json).filter((r) => r && Object.entries(r).some(([k, v]) => k !== 'row_number' && v !== '' && v !== null && v !== undefined));\nconst inicioEvento = (e) => new Date(String(e.fecha).slice(0, 10) + 'T' + (String(e.hora || '00:00').slice(0, 5)) + ':00-05:00');\nconst ok = (status, data, extra = {}) => ({ json: { _status: status, _body: { ok: true, data }, ...extra } });\nconst err = (status, code, message, extra = {}) => ({ json: { _status: status, _body: { ok: false, error: { code, message } }, ...extra } });\nconst aud = (o) => ({ auditoria_id: genId('AUD'), fecha: ahoraISO(), ...o });\n// ─────────────────────────────────────────────────────────────────────────────\n\nconst c = $('Generar checkin_id y fecha').first().json;\nconst data = {\n  resultado: c.resultado, mensaje: c.detalle, checkin_id: c.checkin_id,\n  inscripcion_id: c.inscripcion_id, evento_id: c.evento_id, fecha_checkin: c.fecha_checkin,\n};\nif (c.resultado === 'EXITOSO') return [ok(200, data)];\nconst r = err(c.status, c.resultado, c.detalle);\nr.json._body.data = data;\nreturn [r];"
+      },
+      "id": "bb2767c4-5378-4f3d-a7f7-a9ae8e73c214",
+      "name": "Preparar respuesta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4940,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json._body) }}",
+        "options": {
+          "responseCode": "={{ $json._status }}"
+        }
+      },
+      "id": "1450ab6f-c19d-446e-aacb-44e68434c2d6",
+      "name": "Responder al cliente",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        5200,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Leer solicitud",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer solicitud": {
+      "main": [
+        [
+          {
+            "node": "¿Datos completos?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Datos completos?": {
+      "main": [
+        [
+          {
+            "node": "Leer inscripción (EP06)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Veredicto: datos incompletos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer inscripción (EP06)": {
+      "main": [
+        [
+          {
+            "node": "Leer evento (EP04)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer evento (EP04)": {
+      "main": [
+        [
+          {
+            "node": "Leer historial de check-ins (EP11)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer historial de check-ins (EP11)": {
+      "main": [
+        [
+          {
+            "node": "Preparar validaciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar validaciones": {
+      "main": [
+        [
+          {
+            "node": "¿Inscripción existe?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Inscripción existe?": {
+      "main": [
+        [
+          {
+            "node": "¿Evento existe?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Veredicto: inscripción inexistente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Evento existe?": {
+      "main": [
+        [
+          {
+            "node": "¿Pertenece al evento?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Veredicto: evento inexistente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Pertenece al evento?": {
+      "main": [
+        [
+          {
+            "node": "¿Ingreso ya registrado? (anti-duplicado)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Veredicto: otro evento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Ingreso ya registrado? (anti-duplicado)": {
+      "main": [
+        [
+          {
+            "node": "Veredicto: duplicado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "¿Estado CONFIRMADA?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Estado CONFIRMADA?": {
+      "main": [
+        [
+          {
+            "node": "Veredicto: check-in exitoso",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Veredicto: estado no permitido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Veredicto: datos incompletos": {
+      "main": [
+        [
+          {
+            "node": "Generar checkin_id y fecha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Veredicto: inscripción inexistente": {
+      "main": [
+        [
+          {
+            "node": "Generar checkin_id y fecha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Veredicto: evento inexistente": {
+      "main": [
+        [
+          {
+            "node": "Generar checkin_id y fecha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Veredicto: otro evento": {
+      "main": [
+        [
+          {
+            "node": "Generar checkin_id y fecha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Veredicto: duplicado": {
+      "main": [
+        [
+          {
+            "node": "Generar checkin_id y fecha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Veredicto: estado no permitido": {
+      "main": [
+        [
+          {
+            "node": "Generar checkin_id y fecha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Veredicto: check-in exitoso": {
+      "main": [
+        [
+          {
+            "node": "Generar checkin_id y fecha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generar checkin_id y fecha": {
+      "main": [
+        [
+          {
+            "node": "Registrar intento (EP11)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar intento (EP11)": {
+      "main": [
+        [
+          {
+            "node": "¿Check-in EXITOSO?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Check-in EXITOSO?": {
+      "main": [
+        [
+          {
+            "node": "Marcar ASISTIO (EP06)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Preparar respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar ASISTIO (EP06)": {
+      "main": [
+        [
+          {
+            "node": "Preparar notificación (check-in)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar notificación (check-in)": {
+      "main": [
+        [
+          {
+            "node": "Notificar check-in (WF09)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notificar check-in (WF09)": {
+      "main": [
+        [
+          {
+            "node": "Preparar respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar respuesta": {
+      "main": [
+        [
+          {
+            "node": "Responder al cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Bogota",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "tags": []
+}
