@@ -6,7 +6,7 @@ const BASE = process.env.N8N_WEBHOOK_BASE_URL;
 const KEY = process.env.EP_API_KEY;
 
 // Rutas permitidas (deben coincidir con docs/CONTRATOS_API.md)
-const PERMITIDAS = new Set(["usuarios", "auth", "telegram", "catalogo", "inscripciones"]);
+const PERMITIDAS = new Set(["usuarios", "auth", "telegram", "catalogo", "inscripciones", "checkin-digital"]);
 
 type Ctx = { params: Promise<{ path: string[] }> };
 

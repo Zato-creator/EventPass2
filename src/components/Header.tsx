@@ -86,6 +86,11 @@ export function Header() {
               Mis inscripciones
             </NavLink>
           )}
+          {usuario && (
+            <NavLink href="/checkin" activo={pathname.startsWith("/checkin")}>
+              Check-in
+            </NavLink>
+          )}
         </div>
 
         <div className="ml-auto flex flex-wrap items-center gap-3">

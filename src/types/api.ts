@@ -68,7 +68,7 @@ export type CatalogoListado = { tipo: "LISTADO" | "FILTRO"; total: number; event
 export type CatalogoDetalle = { tipo: "DETALLE"; evento: EventoPublico };
 
 // ── Inscripciones ──
-export type EstadoInscripcion = "CONFIRMADA" | "LISTA_ESPERA" | "CANCELADA";
+export type EstadoInscripcion = "CONFIRMADA" | "LISTA_ESPERA" | "CANCELADA" | "ASISTIO";
 
 export type Inscripcion = {
   inscripcion_id: string;
@@ -86,3 +86,18 @@ export type Inscripcion = {
 export type InscripcionConEvento = Inscripcion & {
   evento: Pick<EventoPublico, "nombre" | "fecha" | "hora" | "lugar" | "estado">;
 };
+
+// ── Check-in digital (WF12) ──
+export type ResultadoCheckin = "EXITOSO" | "DUPLICADO" | "RECHAZADO";
+
+export type CheckinData = {
+  resultado: ResultadoCheckin;
+  mensaje: string;
+  checkin_id: string;
+  inscripcion_id: string;
+  evento_id: string;
+  fecha_checkin: string;
+};
+
+// En DUPLICADO / RECHAZADO n8n devuelve el error estándar y además "data" con el intento registrado.
+export type CheckinRespuesta = ApiOk<CheckinData> | (ApiError & { data?: CheckinData });

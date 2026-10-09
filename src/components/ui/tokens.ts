@@ -40,6 +40,7 @@ export const ESTADOS: Record<EstadoVisual, EstiloEstado> = {
   CONFIRMADA: { etiqueta: "Confirmada", bg: "#DCFCE7", fg: "#14532D" },
   LISTA_ESPERA: { etiqueta: "Lista de espera", bg: "#FEF3C7", fg: "#78350F" },
   CANCELADA: { etiqueta: "Cancelada", bg: "#FEE2E2", fg: "#7F1D1D" },
+  ASISTIO: { etiqueta: "Asistió", bg: "#E6EDFC", fg: "#1E3A8A" },
 };
 
 // "Últimos cupos" es solo un matiz visual de DISPONIBLE (≤ 20 % de la capacidad libre).
