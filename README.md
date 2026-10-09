@@ -467,3 +467,183 @@ curl -s -o /dev/null -w "%{http_code}\n" "$BASE/ep/catalogo"                # si
 - **Sin transacciones.** Google Sheets no tiene transacciones: dos inscripciones simultáneas al último cupo podrían leer el mismo conteo. Para reducir esa ventana, se relee justo antes de escribir y WF07 corrige la ocupación en cada ejecución. Para producción real se usaría una base de datos con bloqueo.
 - **Latencia de los procesos periódicos.** La reasignación tarda hasta 5 minutos y los recordatorios hasta 15 minutos.
 - **Imágenes externas.** Las imágenes de los eventos son URLs externas. Si una no carga, la tarjeta muestra el color y el ícono de su categoría.
+
+---
+
+## Examen — Check-in digital
+
+### Descripción
+
+El check-in digital registra el ingreso de un asistente el día del evento. Se envían un `inscripcion_id` y un `evento_id`. n8n hace las validaciones, guarda **todos** los intentos en `EP11_Checkin` y, si el resultado es exitoso, cambia la inscripción de `CONFIRMADA` a `ASISTIO` y avisa al asistente por Gmail y Telegram a través de WF09.
+
+- **Workflow:** `WF12_checkin_digital`. El archivo es `n8n/WF12_checkin_digital.json` y se genera con `node scripts/n8n/wf-checkin.mjs`. Se llama **WF12** porque `WF11_validar_sesion` ya existe y lo usan WF01, WF02, WF03 y WF06.
+- **Frontend:** la página `/checkin` aparece en el menú como "Check-in" cuando hay sesión iniciada. El servicio es `src/lib/api/checkin.ts` y el proxy permite la ruta `checkin-digital`.
+- **Sin cambios:** los workflows existentes no se modificaron.
+
+### Endpoint
+
+| Método | Path en n8n                                                  | Desde el frontend                                           |
+| ------ | ------------------------------------------------------------ | ----------------------------------------------------------- |
+| `POST` | `/webhook/ep/checkin-digital` (requiere el header `X-EP-Key`) | `POST /api/n8n/checkin-digital` (el proxy agrega `X-EP-Key`) |
+
+**Petición**
+
+```json
+{ "inscripcion_id": "INS-20261006083015-9F2C", "evento_id": "EVT-001" }
+```
+
+### Respuestas
+
+Todas siguen el formato estándar del proyecto, `{ ok, data | error }`. En DUPLICADO y RECHAZADO también se devuelve `data` con el intento que quedó registrado.
+
+**200 · EXITOSO**
+
+```json
+{
+  "ok": true,
+  "data": {
+    "resultado": "EXITOSO",
+    "mensaje": "Check-in realizado correctamente",
+    "checkin_id": "CHK-20261009081502-3A7F",
+    "inscripcion_id": "INS-20261006083015-9F2C",
+    "evento_id": "EVT-001",
+    "fecha_checkin": "2026-10-09T08:15:02-05:00"
+  }
+}
+```
+
+**409 · DUPLICADO**
+
+```json
+{
+  "ok": false,
+  "error": { "code": "DUPLICADO", "message": "El ingreso ya había sido registrado" },
+  "data": {
+    "resultado": "DUPLICADO",
+    "mensaje": "El ingreso ya había sido registrado",
+    "checkin_id": "CHK-20261009081733-B21C",
+    "inscripcion_id": "INS-20261006083015-9F2C",
+    "evento_id": "EVT-001",
+    "fecha_checkin": "2026-10-09T08:17:33-05:00"
+  }
+}
+```
+
+**400 / 404 / 422 · RECHAZADO**
+
+```json
+{
+  "ok": false,
+  "error": { "code": "RECHAZADO", "message": "La inscripción no está CONFIRMADA (estado actual: CANCELADA)" },
+  "data": {
+    "resultado": "RECHAZADO",
+    "mensaje": "La inscripción no está CONFIRMADA (estado actual: CANCELADA)",
+    "checkin_id": "CHK-20261009082010-77D1",
+    "inscripcion_id": "INS-20261006090000-1B2C",
+    "evento_id": "EVT-001",
+    "fecha_checkin": "2026-10-09T08:20:10-05:00"
+  }
+}
+```
+
+### Validaciones, en este orden
+
+Cada validación es un nodo IF identificable en WF12.
+
+| #   | Nodo                                       | Si falla                                                          | HTTP |
+| --- | ------------------------------------------ | ----------------------------------------------------------------- | ---- |
+| 0   | `¿Datos completos?`                        | RECHAZADO: "Faltan datos: se requieren inscripcion_id y evento_id" | 400  |
+| 1   | `¿Inscripción existe?`                     | RECHAZADO: "Inscripción inexistente"                              | 404  |
+| 2   | `¿Evento existe?`                          | RECHAZADO: "Evento inexistente"                                   | 404  |
+| 3   | `¿Pertenece al evento?`                    | RECHAZADO: "La inscripción pertenece a otro evento (EVT-…)"       | 422  |
+| 4   | `¿Ingreso ya registrado? (anti-duplicado)` | DUPLICADO: "El ingreso ya había sido registrado"                  | 409  |
+| 5   | `¿Estado CONFIRMADA?`                      | RECHAZADO con el estado actual (`LISTA_ESPERA`, `CANCELADA`, …)   | 422  |
+
+La validación de duplicado va **antes** de la de estado. Así, un segundo intento sobre una inscripción que ya está en `ASISTIO` responde DUPLICADO y no RECHAZADO.
+
+**Lecturas.** WF12 lee tres hojas, cada una filtrada por la columna indicada:
+
+| Nodo                                 | Hoja             | Filtro           |
+| ------------------------------------ | ---------------- | ---------------- |
+| `Leer inscripción (EP06)`            | `EP06 › Inscripciones` | `inscripcion_id` |
+| `Leer evento (EP04)`                 | `EP04 › Eventos`       | `evento_id`      |
+| `Leer historial de check-ins (EP11)` | `EP11 › Checkins`      | `inscripcion_id` |
+
+Las tres usan _Always Output Data_, así que una búsqueda vacía no detiene el flujo.
+
+### Google Sheets: `EP11_Checkin`, hoja `Checkins`
+
+| Columna          | Ejemplo                                                      |
+| ---------------- | ------------------------------------------------------------ |
+| `checkin_id`     | `CHK-20261009081502-3A7F`                                    |
+| `inscripcion_id` | `INS-20261006083015-9F2C`                                    |
+| `evento_id`      | `EVT-001`                                                    |
+| `usuario_id`     | `USR-20261001120000-0A1B` (vacío si la inscripción no existe) |
+| `fecha_checkin`  | `2026-10-09T08:15:02-05:00` (America/Bogota)                 |
+| `resultado`      | `EXITOSO` · `RECHAZADO` · `DUPLICADO`                        |
+| `detalle`        | el motivo, en texto                                          |
+
+Se registra **cada intento**, también los rechazados y los duplicados, en el nodo `Registrar intento (EP11)`. Ninguna fila se borra.
+
+### Cambio de estado: CONFIRMADA → ASISTIO
+
+Solo cuando el resultado es EXITOSO, el nodo `Marcar ASISTIO (EP06)` hace un _Update_ en `EP06 › Inscripciones`. Usa `inscripcion_id` como columna de coincidencia y cambia solo `estado = ASISTIO` y `fecha_actualizacion`. No toca ninguna otra fila ni columna. El frontend muestra el nuevo estado como "Asistió".
+
+### Mecanismo anti-duplicado
+
+Un intento se considera DUPLICADO en cualquiera de estos dos casos:
+
+- ya existe en `Checkins` una fila con el mismo `inscripcion_id` y `resultado = EXITOSO`;
+- la inscripción ya está en `ASISTIO`.
+
+Son dos señales independientes: si una de las dos escrituras falla, la otra sigue bloqueando el reingreso. El intento duplicado también queda registrado en `Checkins`.
+
+### Integración con WF09
+
+Solo cuando el resultado es EXITOSO:
+
+1. `Preparar notificación (check-in)` arma la entrada que WF09 ya espera:
+   - `usuario_id`;
+   - `tipo = CHECKIN_EXITOSO`;
+   - `titulo`;
+   - `mensaje`, con el nombre del evento, la fecha y hora de ingreso y el `checkin_id`;
+   - `evento_id` e `inscripcion_id`;
+   - `clave_idempotencia = CHECKIN_EXITOSO|<inscripcion_id>`.
+2. `Notificar check-in (WF09)` lo envía con _Execute Workflow_.
+3. WF09 busca el correo (EP01) y el `chat_id` (EP03), envía por Gmail y por Telegram y registra cada canal en EP09.
+
+WF12 no tiene nodos propios de Gmail ni de Telegram.
+
+### Casos de prueba
+
+Prueba directa contra n8n (`$BASE` = URL de webhooks y `$KEY` = `EP_API_KEY`):
+
+```bash
+curl -s -X POST "$BASE/ep/checkin-digital" -H "X-EP-Key: $KEY" -H "Content-Type: application/json" \
+  -d '{"inscripcion_id":"INS-…","evento_id":"EVT-001"}'
+```
+
+| #   | Caso                                                      | Petición                                            | Respuesta esperada                                                                          |
+| --- | --------------------------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| 1   | **Válido:** inscripción CONFIRMADA de EVT-001             | `{"inscripcion_id":"INS-A","evento_id":"EVT-001"}`  | **200** EXITOSO, con `checkin_id`. EP06 pasa a `ASISTIO` y llega el aviso por Gmail y Telegram |
+| 2   | **Duplicado:** repetir el caso 1                          | `{"inscripcion_id":"INS-A","evento_id":"EVT-001"}`  | **409** DUPLICADO, "El ingreso ya había sido registrado"                                    |
+| 3   | **Estado no permitido:** inscripción CANCELADA o LISTA_ESPERA | `{"inscripcion_id":"INS-B","evento_id":"EVT-001"}`  | **422** RECHAZADO, "La inscripción no está CONFIRMADA (estado actual: CANCELADA)"           |
+| 4   | **Evento incorrecto:** inscripción de EVT-001 enviada con EVT-002 | `{"inscripcion_id":"INS-A2","evento_id":"EVT-002"}` | **422** RECHAZADO, "La inscripción pertenece a otro evento (EVT-001)"                       |
+
+Cada caso agrega una fila en `EP11_Checkin › Checkins` con su `resultado`.
+
+### Importación y configuración en n8n
+
+1. Crea en Google Drive la hoja de cálculo **`EP11_Checkin`**. Renombra la primera pestaña a **`Checkins`** y escribe en la fila 1 los encabezados `checkin_id, inscripcion_id, evento_id, usuario_id, fecha_checkin, resultado, detalle`. Compártela como **Editor** con la cuenta de Google que usa la credencial "Google Sheets EventPass".
+2. Copia el ID de la hoja (está en la URL). Tienes dos formas de ponerlo:
+   - agrégalo a `scripts/n8n/config.local.json` en `sheets.EP11_CHECKIN` y ejecuta `node scripts/n8n/wf-checkin.mjs`, o
+   - reemplaza `REEMPLAZAR_ID_EP11_CHECKIN` en los dos nodos de EP11 después de importar.
+3. En n8n, ve a **Import from File** y elige `n8n/WF12_checkin_digital.json`. Revisa que las credenciales sean "Google Sheets EventPass" y "EP API Key (X-EP-Key)", y que el nodo `Notificar check-in (WF09)` apunte a `WF09_notificaciones`.
+4. Configura la zona horaria del workflow en `America/Bogota` (ya viene en _settings_) y **publica/activa** el workflow.
+5. Despliega el frontend: el proxy ya incluye la ruta `checkin-digital` y no hacen falta variables nuevas.
+
+### Limitaciones de la extensión
+
+- **Cupos.** Los cupos se calculan como capacidad − inscripciones `CONFIRMADA`. Por eso, una inscripción que pasa a `ASISTIO` deja de contarse y el catálogo mostraría un cupo libre más. No se modificaron WF05, WF06 ni WF07 para no tocar lo existente. En la práctica no afecta, porque el check-in ocurre al inicio del evento. Si hiciera falta, la corrección es contar `ASISTIO` como cupo ocupado en esos tres workflows.
+- **Permisos.** No hay un rol de "staff": cualquier usuario con sesión iniciada puede usar la página de check-in.
+- **Concurrencia.** Igual que el resto del proyecto, Google Sheets no tiene transacciones. Dos intentos simultáneos del mismo check-in podrían pasar ambos la validación.
